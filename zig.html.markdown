@@ -44,6 +44,8 @@ const mem_eql = std.mem.eql;
   - [Labels](#labels)
 - [Data Structures](#data-structures)
   - [`struct`](#struct)
+    - [packed structs](#packed-structs)
+    - [tuples](#tuples)
   - [`enum`](#enum)
   - [`union`](#union)
   - [arrays](#arrays)
@@ -342,6 +344,43 @@ assert(is_hydrogen);
 ### `struct`
 
 ```
+const Foo = struct {
+  const bar = "bar";
+
+  // the alignment of the fields depends on the ABI
+  a: bool,
+  b: bool,
+  c: bool = true,
+};
+
+assert(mem_eql(u8, @typeName(Foo), "Foo"));
+assert(@sizeOf(Foo) == 3);
+assert(mem_eql(u8, @field(Foo, "bar"), "bar"));
+
+// instantiation
+var foo = Foo {
+  .a = false,
+  .b = undefined,
+};
+
+foo.b = true;
+
+assert(foo.a == false);
+assert(foo.b == true);
+assert(foo.c == true);
+```
+
+<small>Note: `@field` [currently](https://github.com/ziglang/zig/issues/3839) returns fields _and_ declarations.</small>
+
+#### packed structs
+
+```
+```
+
+#### tuples
+
+```
+
 ```
 
 ### `enum`
