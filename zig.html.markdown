@@ -343,18 +343,18 @@ assert(is_hydrogen);
 
 ### `struct`
 
+The order of the fields cannot be garanteed to be preserved. The alignment is ABI dependent. `@sizeOf` on an unpacked struct is unreliable.
+
 ```
 const Foo = struct {
   const bar = "bar";
 
-  // the alignment of the fields depends on the ABI
   a: bool,
   b: bool,
   c: bool = true,
 };
 
 assert(mem_eql(u8, @typeName(Foo), "Foo"));
-assert(@sizeOf(Foo) == 3);
 assert(mem_eql(u8, @field(Foo, "bar"), "bar"));
 
 // instantiation
@@ -374,13 +374,31 @@ assert(foo.c == true);
 
 #### packed structs
 
+Packed structs have a guaranteed in-memory layout. Notably:
+
+- fields' order is preserved
+- no padding between the fields
+
 ```
 ```
 
 #### tuples
 
-```
+Tuples are anonymous structs that are analogous to arrays which means they:
 
+- support array-specific operators (`**` and `++`)
+- have a `len` field
+- may be indexed by a comptime index
+
+```
+const foo = .{
+  "bar",
+  true,
+  42
+} ++ .{ undefined };
+
+assert(foo.len == 4);
+assert(foo[2] == foo.@"2");
 ```
 
 ### `enum`
