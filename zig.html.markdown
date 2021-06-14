@@ -105,8 +105,16 @@ if (bar) |value| {
 }
 
 // which is equivalent to
-const value = bar orelse unreachable;
-assert(value == 0);
+{
+  const value = bar orelse unreachable;
+  assert(value == 0);
+}
+
+// .? shorthand
+{
+  const value = bar.?;
+  assert(value == 0);
+}
 ```
 
 ###### multiple captures
@@ -240,9 +248,9 @@ assert(mem_eql(u8, result,"else"));
 ```zig
 const tuple = .{ true, 42, "foo" };
 comptime const foo = struct {
-  pub var @"0": bool = undefined;
-  pub var @"1": i32 = undefined;
-  pub var @"2": []const u8 = undefined;
+  var @"0": bool = undefined;
+  var @"1": i32 = undefined;
+  var @"2": []const u8 = undefined;
 };
 
 @setEvalBranchQuota(std.math.maxInt(u32));
