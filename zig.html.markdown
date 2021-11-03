@@ -44,7 +44,6 @@ const mem_eql = std.mem.eql;
   - [Labels](#labels)
 - [Data Structures](#data-structures)
   - [`struct`](#struct)
-    - [packed structs](#packed-structs)
     - [tuples](#tuples)
   - [`enum`](#enum)
   - [`union`](#union)
@@ -201,7 +200,7 @@ assert(array[1] == 1);
 assert(array[2] == 2);
 ```
 
-<small>Note: only arrays, slices and tuples can be iterated over</small>
+<small>Note: only [arrays](#arrays), [slices](#slices) and [tuples](#tuples) can be iterated over</small>
 
 #### while
 
@@ -242,10 +241,12 @@ const result = for (str) |_| {
   continue;
 } else "else";
 
-assert(mem_eql(u8, result,"else"));
+assert(mem_eql(u8, result, "else"));
 ```
 
 #### inline
+
+An inline loop will be unrolled at compile time.
 
 ```zig
 const tuple = .{ true, 42, "foo" };
@@ -310,7 +311,7 @@ bar catch |err| switch (err) {
 
 #### `_` prong
 
-```
+```zig
 const Elements = enum(u7) {
   hydrogen = 1,
   helium = 2,
@@ -343,9 +344,7 @@ assert(is_hydrogen);
 
 ### `struct`
 
-The order of the fields cannot be garanteed to be preserved. The alignment is ABI dependent. `@sizeOf` on an unpacked struct is unreliable.
-
-```
+```zig
 const Foo = struct {
   const bar = "bar";
 
@@ -354,7 +353,6 @@ const Foo = struct {
   c: bool = true,
 };
 
-assert(mem_eql(u8, @typeName(Foo), "Foo"));
 assert(mem_eql(u8, @field(Foo, "bar"), "bar"));
 
 // instantiation
@@ -370,27 +368,24 @@ assert(foo.b == true);
 assert(foo.c == true);
 ```
 
-<small>Note: `@field` [currently](https://github.com/ziglang/zig/issues/3839) returns fields _and_ declarations.</small>
+<small>Notes:
 
-#### packed structs
-
-Packed structs have a guaranteed in-memory layout. Notably:
-
-- fields' order is preserved
-- no padding between the fields
-
-```
-```
+- `@field` [currently](https://github.com/ziglang/zig/issues/3839) returns fields _and_ declarations.
+- the order of the fields cannot be garanteed to be preserved
+- the fields' alignment is ABI dependent
+- `@bitSizeOf` and `@sizeOf` cannot be relied on for plain structs
+</small>
 
 #### tuples
 
-Tuples are anonymous structs that are analogous to arrays which means they:
+Tuples are anonymous struct literals that are analogous to [arrays](#arrays) in various ways:
 
 - support array-specific operators (`**` and `++`)
 - have a `len` field
 - may be indexed by a comptime index
+- must use `inline for` to be iterated over
 
-```
+```zig
 const foo = .{
   "bar",
   true,
@@ -403,7 +398,23 @@ assert(foo[2] == foo.@"2");
 
 ### `enum`
 
-```
+```zig
+const Result = enum(u1) {
+  const Self = @This();
+
+  ok = 1,
+  ko = 0,
+
+  fn toString(self: Self) []const u8 {
+    return @tagName(self);
+  }
+
+  fn fromString(str: []const u8) !Self {
+    return std.meta.stringToEnum(Result, str) orelse error.InvalidEnumTag;
+  }
+};
+
+try std.testing.expectError(error.InvalidEnumTag, Result.fromString("bar"));
 ```
 
 ### `union`
