@@ -26,7 +26,7 @@ const mem_eql = std.mem.eql;
         - [single capture](#single-capture)
         - [multiple captures](#multiple-captures)
         - [pointer](#pointer)
-      - [Error Union](#error-union)
+      - [Error Union Type](#error-union-type)
         - [mandatory `else`](#mandatory-else)
         - [value unwrapping](#value-unwrapping)
       - [Unwrapping Order](#unwrapping-order)
@@ -47,6 +47,7 @@ const mem_eql = std.mem.eql;
     - [tuples](#tuples)
   - [`enum`](#enum)
   - [`union`](#union)
+    - [tagged union](#tagged-union)
   - [arrays](#arrays)
   - [slices](#slices)
 - [Types](#types)
@@ -140,7 +141,9 @@ if (foo) |*ptr| {
 }
 ```
 
-##### Error Union
+##### Error Union Type
+
+An error union type is the combination of an error set type and another [type](#types).
 
 ###### mandatory `else`
 
@@ -154,7 +157,9 @@ if (zero) |value| {
 ###### value unwrapping
 
 ```zig
+// error.Foo is the shorthand of (error {Foo}).Foo
 const bar: anyerror!u7 = error.Foo;
+
 if (bar) |_| {} else |value| {
   assert(value == error.Foo);
 }
@@ -179,7 +184,7 @@ if (foo) |*optional_ptr| {
 assert((try foo).? == 2);
 ```
 
-<small>Note: error unions are always checked first</small>
+<small>Note: errors are always checked first</small>
 
 ### Loops
 
@@ -285,19 +290,21 @@ assert(mem_eql(u8, bar, "zero"));
 #### enum shorthand
 
 ```zig
-const cardinalDirections = enum { North, South, East, West };
-const direction: cardinalDirections = .North;
+const CardinalDirections = enum { North, South, East, West };
+const direction: CardinalDirections = .North;
 const bool = switch (direction) {
-  // shorthand of cardinalDirections.North => true,
+  // shorthand of CardinalDirections.North => true,
   .North => true,
   else => false
 };
 
-assert(cardinalDirections.North == .North);
+assert(CardinalDirections.North == .North);
 assert(bool);
 ```
 
 #### exhaustiveness
+
+If a switch statement does not have an `else` prong, it must exhaustively list all the possible values.
 
 ```zig
 const bar: error{ Foo, Qux }!u7 = error.Foo;
@@ -306,8 +313,6 @@ bar catch |err| switch (err) {
   error.Qux => unreachable,
 };
 ```
-
-<small>Note: if a switch statement does not have an `else` prong, it must exhaustively list all the possible values</small>
 
 #### `_` prong
 
@@ -418,6 +423,20 @@ try std.testing.expectError(error.InvalidEnumTag, Result.fromString("bar"));
 ```
 
 ### `union`
+
+```zig
+const Bar = union {
+  boolean: bool,
+  int: i16,
+  float: f32,
+};
+
+{ const foo = Bar{ .int = 42 }; }
+// which is equivalent to
+{ const foo: Bar = .{ .int = 42 }; }
+```
+
+#### tagged union
 
 ```
 ```
