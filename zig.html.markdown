@@ -238,7 +238,7 @@ assert(mem_eql(u8, result, "break"));
 #### continue
 
 ```zig
-// evaluates to &[_:0]u8{ 'f', 'o', 'o' };
+// string literals are constant single-item pointers to null-terminated byte arrays
 const str = "foo";
 
 // the index capture is optional
@@ -285,7 +285,7 @@ const bar = switch (foo) {
 assert(mem_eql(u8, bar, "zero"));
 ```
 
-<small>Note: the order of the cases doesn't matter hence overlapping ought to be avoided to ward off undefined behaviours</small>
+<small>Note: [the order of the cases doesn't matter](https://github.com/ziglang/zig/issues/9393) hence overlapping ought to be avoided to ward off undefined behaviours</small>
 
 #### enum shorthand
 
@@ -388,7 +388,6 @@ Tuples are anonymous struct literals that are analogous to [arrays](#arrays) in 
 - support array-specific operators (`**` and `++`)
 - have a `len` field
 - may be indexed by a comptime index
-- must use `inline for` to be iterated over
 
 ```zig
 const foo = .{
@@ -400,6 +399,8 @@ const foo = .{
 assert(foo.len == 4);
 assert(foo[2] == foo.@"2");
 ```
+
+<small>Note: to iterate over a tuple [`inline for`](#inline) must be used</small>
 
 ### `enum`
 
@@ -422,6 +423,8 @@ const Result = enum(u1) {
 try std.testing.expectError(error.InvalidEnumTag, Result.fromString("bar"));
 ```
 
+<small>see also [non-exhaustive enum](#_-prong)</small>
+
 ### `union`
 
 ```zig
@@ -438,8 +441,36 @@ const Bar = union {
 
 #### tagged union
 
+```zig
+const EnumLiteral = enum {
+  a,
+  b,
+};
+
+const TaggedUnion = union(EnumLiteral) {
+  a: u1,
+  b, // shorthand of b: void,
+};
+
+// tagged union coercion to enum
+
+var foo = TaggedUnion{ .a = 0 };
+const qux: EnumLiteral = foo;
+assert(qux == EnumLiteral.a);
+
+// attaching an enum to an union
+// confers switchability
+
+switch (foo) {
+  EnumLiteral.a => |*value| value.* += 1,
+  EnumLiteral.b => unreachable,
+}
+
+assert(foo.a == 1);
 ```
-```
+
+<small>Note: an enum instance may only be coerced to a tagged union if the corresponding field has only one possible value  
+i.e. the union field must be a [zero bit type](https://ziglang.org/documentation/master/#toc-Zero-Bit-Types)</small>
 
 ### arrays
 
@@ -460,7 +491,7 @@ const Bar = union {
 | f16, f32, f64, f128          | floating point IEEE-754-2008                                                 |
 | c_short, c_ushort<br>c_int, c_uint<br>c_long, c_ulong<br>c_longlong, c_ulonglong<br>c_longdouble<br>c_void  | for ABI compatibility with C
 | void                         | 0 bit type                                                                   |
-| bool                         | true or false                                                                |
+| bool                         | `true` or `false`                                                            |
 | noreturn                     | the type of `break`, `continue`, `return`, `unreachable`, and `while (true) {}` |
 | type                         | the type of types                                                            |
 | anyerror                     | global error set                                                             |
